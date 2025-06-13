@@ -1,0 +1,20 @@
+const express = require("express");
+const connectDB = require("./database/db.js");
+const dotenv = require("dotenv");
+const userRoutes = require("./routes/userRoutes.js");
+const taskRoutes = require("./routes/taskRoutes.js");
+const errorHandler = require("./middleware/errorMiddleware.js");
+const cors = require("cors");
+dotenv.config();
+connectDB();
+
+const port = process.env.PORT || 5000;
+const app = express();
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+console.log(process.env.api);
+app.use(`/${process.env.api}/users`, userRoutes);
+app.use(`/${process.env.api}/tasks`, taskRoutes);
+app.use(errorHandler);
+app.listen(port, () => console.log(`server running on port ${port}`));
