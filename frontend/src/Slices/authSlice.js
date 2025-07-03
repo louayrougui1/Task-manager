@@ -1,17 +1,17 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
-const API_URL = `http://localhost/${import.meta.env.VITE_API}/users/`;
+const API_URL = `http://localhost:8000/${import.meta.env.VITE_API}/users/`;
 
 const user = JSON.parse(localStorage.getItem("user"));
 
 export const register = createAsyncThunk(
   "auth/register",
-  async (user, thunkApi) => {
+  async (user, thunkAPI) => {
     try {
       const resp = await axios.post(API_URL, user);
       if (resp.data) {
-        localStorage.setItem("user", resp.data);
+        localStorage.setItem("user", JSON.stringify(resp.data));
       }
       return resp.data;
     } catch (error) {
@@ -20,32 +20,76 @@ export const register = createAsyncThunk(
           error.response.data &&
           error.response.data.message) ||
         error.message;
-      return thunkApi.rejectWithValue(message);
+      return thunkAPI.rejectWithValue(message);
     }
   }
 );
 
-export const login = createAsyncThunk("auth/login", async (user, thunkApi) => {
+export const login = createAsyncThunk("auth/login", async (user, thunkAPI) => {
   try {
-    const resp = axios.post(API_URL + "login", user);
+    const resp = await axios.post(API_URL + "login", user);
     if (resp.data) {
-      localStorage.setItem("user", resp.data);
+      localStorage.setItem("user", JSON.stringify(resp.data));
     }
     return resp.data;
   } catch (error) {
     const message =
       (error.response && error.response.data && error.response.data.message) ||
       error.message;
-    return thunkApi.rejectWithValue(message);
+    return thunkAPI.rejectWithValue(message);
   }
 });
 
-export const logout = createAsyncThunk("auth/logout", async (thunkApi) => {
+export const logout = createAsyncThunk("auth/logout", async (thunkAPI) => {
   try {
-    localStorage.setItem("user", resp.data);
+    localStorage.removeItem("user");
   } catch (error) {
     const message = error.message;
-    return thunkApi.rejectWithValue(message);
+    return thunkAPI.rejectWithValue(message);
+  }
+});
+
+export const editProfile = createAsyncThunk(
+  "auth/edit",
+  async (data, thunkAPI) => {
+    try {
+      const token = thunkAPI.getState().auth.user.token;
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
+      const resp = await axios.put(API_URL + "editProfile", data, config);
+      localStorage.setItem("user", JSON.stringify(resp.data));
+      return resp.data;
+    } catch (error) {
+      const message =
+        (error.response &&
+          error.response.data &&
+          error.response.data.message) ||
+        error.message;
+      return thunkAPI.rejectWithValue(message);
+    }
+  }
+);
+
+export const getMe = createAsyncThunk("auth/getMe", async (thunkAPI) => {
+  try {
+    const token = thunkAPI.getState().auth.user.token;
+    const config = {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    };
+    const resp = await axios.get(API_URL + "profile", config);
+    console.log("resp.data");
+    localStorage.setItem("user", JSON.stringify(resp.data));
+    return resp.data;
+  } catch (error) {
+    const message =
+      (error.response && error.response.data && error.response.data.message) ||
+      error.message;
+    return thunkAPI.rejectWithValue(message);
   }
 });
 
@@ -114,6 +158,34 @@ const authSlice = createSlice({
         state.isError = true;
         state.message = action.payload;
         state.user = null;
+      })
+      .addCase(editProfile.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(editProfile.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.isSuccess = true;
+        state.isError = false;
+        state.user = action.payload;
+      })
+      .addCase(editProfile.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isError = true;
+        state.message = action.payload;
+      })
+      .addCase(getMe.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(getMe.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.isSuccess = true;
+        state.isError = false;
+        state.user = action.payload;
+      })
+      .addCase(getMe.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isError = true;
+        state.message = action.payload;
       });
   },
 });

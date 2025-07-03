@@ -1,4 +1,3 @@
-import { useState } from "react";
 import "./App.css";
 import {
   createBrowserRouter,
@@ -10,6 +9,11 @@ import MainLayout from "./layouts/MainLayout";
 import LandingPage from "./page/LandingPage";
 import TasksList from "./page/TasksList";
 import Profile from "./page/Profile";
+import Login from "./page/Login";
+import Register from "./page/Register";
+import { ToastContainer, Bounce } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
 function App() {
   const router = createBrowserRouter(
     createRoutesFromElements(
@@ -17,12 +21,27 @@ function App() {
         <Route index element={<LandingPage />} />
         <Route path="/tasks" element={<TasksList />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/Login" element={<Login />} />
+        <Route path="/Register" element={<Register />} />
       </Route>
     )
   );
   return (
     <>
       <RouterProvider router={router} />
+      <ToastContainer
+        position="top-center"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick={false}
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover={false}
+        theme="light"
+        transition={Bounce}
+      />
     </>
   );
 }

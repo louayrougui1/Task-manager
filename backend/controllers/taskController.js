@@ -35,8 +35,8 @@ const updateTask = asyncHandler(async (req, res) => {
   const newTask = {
     user: task.user,
     text: text ? text : task.text,
-    priority: priority ? priority : task.priority,
-    completed: completed ? completed : task.completed,
+    priority: priority,
+    completed: completed,
   };
   const updatedTask = await Task.findByIdAndUpdate(req.params.id, newTask, {
     new: true,
@@ -55,7 +55,7 @@ const deleteTask = asyncHandler(async (req, res) => {
     throw new Error("User not Authorized to update this Task");
   }
   await task.deleteOne();
-  res.status(200).json({ id: req.params.id });
+  res.status(200).json({ _id: req.params.id });
 });
 
 const deleteTasks = asyncHandler(async (req, res) => {

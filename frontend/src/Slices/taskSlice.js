@@ -1,7 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
-import { create } from "../../../backend/models/userModel";
-const API_URL = `http://localhost/${import.meta.env.VITE_API}/tasks/`;
+const API_URL = `http://localhost:8000/${import.meta.env.VITE_API}/tasks/`;
 
 const initialState = {
   tasks: [],
@@ -19,7 +18,7 @@ export const getTasks = createAsyncThunk("task/getAll", async (_, thunkAPI) => {
         Authorization: `Bearer ${token}`,
       },
     };
-    const resp = axios.get(API_URL, config);
+    const resp = await axios.get(API_URL, config);
     return resp.data;
   } catch (error) {
     const message =
@@ -40,7 +39,7 @@ export const createTask = createAsyncThunk(
           Authorization: `Bearer ${token}`,
         },
       };
-      const resp = axios.post(API_URL, task, config);
+      const resp = await axios.post(API_URL, task, config);
       return resp.data;
     } catch (error) {
       const message =
@@ -56,16 +55,15 @@ export const createTask = createAsyncThunk(
 
 export const updateTask = createAsyncThunk(
   "task/update",
-  async (data, thunkAPI) => {
+  async (task, thunkAPI) => {
     try {
-      const { id, task } = data;
       const token = thunkAPI.getState().auth.user.token;
       const config = {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       };
-      const resp = axios.put(API_URL + id, task, config);
+      const resp = await axios.put(API_URL + task._id, task, config);
       return resp.data;
     } catch (error) {
       const message =
@@ -89,7 +87,7 @@ export const deleteTask = createAsyncThunk(
           Authorization: `Bearer ${token}`,
         },
       };
-      const resp = axios.delete(API_URL + id, config);
+      const resp = await axios.delete(API_URL + id, config);
       return resp.data;
     } catch (error) {
       const message =
@@ -113,7 +111,7 @@ export const deleteTasks = createAsyncThunk(
           Authorization: `Bearer ${token}`,
         },
       };
-      const resp = axios.delete(API_URL + id, config);
+      const resp = await axios.delete(API_URL + id, config);
       return resp.data;
     } catch (error) {
       const message =
@@ -152,7 +150,7 @@ export const taskSlice = createSlice({
         state.message = action.payload;
       })
       .addCase(createTask.pending, (state) => {
-        isLoading = true;
+        state.isLoading = true;
       })
       .addCase(createTask.fulfilled, (state, action) => {
         state.isSuccess = true;
@@ -174,11 +172,29 @@ export const taskSlice = createSlice({
         state.isLoading = false;
         state.isError = false;
         state.tasks = state.tasks.filter(
-          (task) => task._id !== action.payload.id
+          (task) => task._id !== action.payload._id
         );
         state.tasks.push(action.payload);
       })
       .addCase(updateTask.rejected, (state, action) => {
+        state.isError = true;
+        state.isSuccess = false;
+        state.isLoading = false;
+        state.message = action.payload;
+      })
+
+      .addCase(deleteTask.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(deleteTask.fulfilled, (state, action) => {
+        state.isSuccess = true;
+        state.isLoading = false;
+        state.isError = false;
+        state.tasks = state.tasks.filter(
+          (task) => task._id !== action.payload._id
+        );
+      })
+      .addCase(deleteTask.rejected, (state, action) => {
         state.isError = true;
         state.isSuccess = false;
         state.isLoading = false;
@@ -191,26 +207,9 @@ export const taskSlice = createSlice({
         state.isSuccess = true;
         state.isLoading = false;
         state.isError = false;
-        state.tasks = state.tasks.filter(
-          (task) => task._id !== action.payload.id
-        );
-      })
-      .addCase(deleteTasks.rejected, (state, action) => {
-        state.isError = true;
-        state.isSuccess = false;
-        state.isLoading = false;
-        state.message = action.payload;
-      })
-      .addCase(deleteTask.pending, (state) => {
-        state.isLoading = true;
-      })
-      .addCase(deleteTask.fulfilled, (state, action) => {
-        state.isSuccess = true;
-        state.isLoading = false;
-        state.isError = false;
         state.tasks = [];
       })
-      .addCase(deleteTask.rejected, (state, action) => {
+      .addCase(deleteTasks.rejected, (state, action) => {
         state.isError = true;
         state.isSuccess = false;
         state.isLoading = false;
