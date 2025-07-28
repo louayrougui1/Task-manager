@@ -12,7 +12,7 @@ const initialState = {
 
 export const getTasks = createAsyncThunk("task/getAll", async (_, thunkAPI) => {
   try {
-    const token = thunkAPI.getState().auth.user.token;
+    const token = thunkAPI.getState().auth.accessToken;
     const config = {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -33,10 +33,11 @@ export const createTask = createAsyncThunk(
   "task/create",
   async (task, thunkAPI) => {
     try {
-      const token = thunkAPI.getState().auth.user.token;
+      const token = thunkAPI.getState().auth.accessToken;
       const config = {
         headers: {
           Authorization: `Bearer ${token}`,
+          withCredentials: true,
         },
       };
       const resp = await axios.post(API_URL, task, config);
@@ -57,10 +58,11 @@ export const updateTask = createAsyncThunk(
   "task/update",
   async (task, thunkAPI) => {
     try {
-      const token = thunkAPI.getState().auth.user.token;
+      const token = thunkAPI.getState().auth.accessToken;
       const config = {
         headers: {
           Authorization: `Bearer ${token}`,
+          withCredentials: true,
         },
       };
       const resp = await axios.put(API_URL + task._id, task, config);
@@ -81,10 +83,11 @@ export const deleteTask = createAsyncThunk(
   "task/delete",
   async (id, thunkAPI) => {
     try {
-      const token = thunkAPI.getState().auth.user.token;
+      const token = thunkAPI.getState().auth.accessToken;
       const config = {
         headers: {
           Authorization: `Bearer ${token}`,
+          withCredentials: true,
         },
       };
       const resp = await axios.delete(API_URL + id, config);
@@ -105,10 +108,11 @@ export const deleteTasks = createAsyncThunk(
   "task/deleteAll",
   async (_, thunkAPI) => {
     try {
-      const token = thunkAPI.getState().auth.user.token;
+      const token = thunkAPI.getState().auth.accessToken;
       const config = {
         headers: {
           Authorization: `Bearer ${token}`,
+          withCredentials: true,
         },
       };
       const resp = await axios.delete(API_URL + id, config);

@@ -16,7 +16,7 @@ const DropdownProfile = () => {
   const dispatch = useDispatch();
 
   const handleLogout = async () => {
-    await dispatch(logout());
+    await dispatch(logout()).unwrap();
     dispatch(reset());
     navigate("/");
   };
@@ -33,12 +33,12 @@ const DropdownProfile = () => {
               Edit Profile
             </DropdownMenuItem>
           </Link>
-          <DropdownMenuItem className="w-full text-left py-2 text-sm font-semibold flex-row justify-start items-center gap-2 text-red-500 cursor-pointer">
-            <FaSignOutAlt />
-            <button className="cursor-pointer" onClick={handleLogout}>
+          <button className="w-full" onClick={handleLogout}>
+            <DropdownMenuItem className="w-full text-left py-2 text-sm font-semibold flex-row justify-start items-center gap-2 text-red-500 cursor-pointer">
+              <FaSignOutAlt />
               Logout
-            </button>
-          </DropdownMenuItem>
+            </DropdownMenuItem>
+          </button>
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>

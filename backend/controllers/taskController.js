@@ -59,10 +59,6 @@ const deleteTask = asyncHandler(async (req, res) => {
 });
 
 const deleteTasks = asyncHandler(async (req, res) => {
-  if (req.user._id.toString() !== task.user.toString()) {
-    res.status(403);
-    throw new Error("User not Authorized to update this Task");
-  }
   await Task.deleteMany({ user: req.user._id });
   res.status(200).json({ id: req.params.id });
 });

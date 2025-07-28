@@ -22,6 +22,13 @@ export default function Profile() {
   const { user, isLoading, isError, isSuccess, message } = useSelector(
     (state) => state.auth
   );
+  useEffect(() => {
+    if (isLoading) return;
+
+    if (!user) {
+      navigate("/login");
+    }
+  }, [user, isLoading, navigate]);
   const [isEditing, setIsEditing] = useState(false);
   const [avatarURL, setavatarURL] = useState(
     "http://localhost:8000" + user.avatarURL

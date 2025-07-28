@@ -6,15 +6,7 @@ import { Button } from "@/components/ui/button";
 import DropdownProfile from "./DropDownProfile";
 
 const Header = () => {
-  const navigate = useNavigate();
-  const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
-
-  const handleLogout = async () => {
-    await dispatch(logout());
-    dispatch(reset());
-    navigate("/");
-  };
 
   return (
     <header className="flex h-20 w-full shrink-0 items-center px-4 md:px-6">

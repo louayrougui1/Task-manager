@@ -3,15 +3,14 @@ import axios from "axios";
 
 const API_URL = `http://localhost:8000/${import.meta.env.VITE_API}/users/`;
 
-const user = JSON.parse(localStorage.getItem("user"));
-
 export const register = createAsyncThunk(
   "auth/register",
   async (user, thunkAPI) => {
     try {
-      const resp = await axios.post(API_URL, user);
+      const resp = await axios.post(API_URL, user, {
+        withCredentials: true,
+      });
       if (resp.data) {
-        localStorage.setItem("user", JSON.stringify(resp.data));
       }
       return resp.data;
     } catch (error) {
@@ -27,9 +26,10 @@ export const register = createAsyncThunk(
 
 export const login = createAsyncThunk("auth/login", async (user, thunkAPI) => {
   try {
-    const resp = await axios.post(API_URL + "login", user);
+    const resp = await axios.post(API_URL + "login", user, {
+      withCredentials: true,
+    });
     if (resp.data) {
-      localStorage.setItem("user", JSON.stringify(resp.data));
     }
     return resp.data;
   } catch (error) {
@@ -40,9 +40,15 @@ export const login = createAsyncThunk("auth/login", async (user, thunkAPI) => {
   }
 });
 
-export const logout = createAsyncThunk("auth/logout", async (thunkAPI) => {
+export const logout = createAsyncThunk("auth/logout", async (_, thunkAPI) => {
   try {
-    localStorage.removeItem("user");
+    await axios.post(
+      API_URL + "logout",
+      {},
+      {
+        withCredentials: true,
+      }
+    );
   } catch (error) {
     const message = error.message;
     return thunkAPI.rejectWithValue(message);
@@ -53,14 +59,14 @@ export const editProfile = createAsyncThunk(
   "auth/edit",
   async (data, thunkAPI) => {
     try {
-      const token = thunkAPI.getState().auth.user.token;
+      const token = thunkAPI.getState().auth.accessToken;
       const config = {
         headers: {
           Authorization: `Bearer ${token}`,
         },
+        withCredentials: true,
       };
       const resp = await axios.put(API_URL + "editProfile", data, config);
-      localStorage.setItem("user", JSON.stringify(resp.data));
       return resp.data;
     } catch (error) {
       const message =
@@ -73,17 +79,16 @@ export const editProfile = createAsyncThunk(
   }
 );
 
-export const getMe = createAsyncThunk("auth/getMe", async (thunkAPI) => {
+export const getMe = createAsyncThunk("auth/getMe", async (_, thunkAPI) => {
   try {
-    const token = thunkAPI.getState().auth.user.token;
+    const token = thunkAPI.getState().auth.accessToken;
     const config = {
       headers: {
         Authorization: `Bearer ${token}`,
       },
+      withCredentials: true,
     };
     const resp = await axios.get(API_URL + "profile", config);
-    console.log("resp.data");
-    localStorage.setItem("user", JSON.stringify(resp.data));
     return resp.data;
   } catch (error) {
     const message =
@@ -93,8 +98,28 @@ export const getMe = createAsyncThunk("auth/getMe", async (thunkAPI) => {
   }
 });
 
+export const refreshToken = createAsyncThunk(
+  "auth/refreshToken",
+  async (_, thunkAPI) => {
+    try {
+      const resp = await axios.post(
+        API_URL + "refreshToken",
+        {},
+        {
+          withCredentials: true,
+        }
+      );
+      return resp.data.accessToken;
+    } catch (error) {
+      console.log("refreshToken error:", error.response?.data || error.message);
+      return thunkAPI.rejectWithValue("Failed to refresh token");
+    }
+  }
+);
+
 const initialState = {
-  user: user ? user : null,
+  user: null,
+  accessToken: null,
   isError: false,
   isLoading: false,
   isSuccess: false,
@@ -121,7 +146,14 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.isSuccess = true;
         state.isError = false;
-        state.user = action.payload;
+        state.user = {
+          _id: action.payload._id,
+          name: action.payload.name,
+          email: action.payload.email,
+          avatarURL: action.payload.avatarURL,
+          createdAt: action.payload.createdAt,
+        };
+        state.accessToken = action.payload.token;
       })
       .addCase(register.rejected, (state, action) => {
         state.isLoading = false;
@@ -136,7 +168,14 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.isSuccess = true;
         state.isError = false;
-        state.user = action.payload;
+        state.user = {
+          _id: action.payload._id,
+          name: action.payload.name,
+          email: action.payload.email,
+          avatarURL: action.payload.avatarURL,
+          createdAt: action.payload.createdAt,
+        };
+        state.accessToken = action.payload.token;
       })
       .addCase(login.rejected, (state, action) => {
         state.isLoading = false;
@@ -152,6 +191,7 @@ const authSlice = createSlice({
         state.isSuccess = true;
         state.isError = false;
         state.user = null;
+        state.accessToken = null;
       })
       .addCase(logout.rejected, (state, action) => {
         state.isLoading = false;
@@ -169,6 +209,20 @@ const authSlice = createSlice({
         state.user = action.payload;
       })
       .addCase(editProfile.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isError = true;
+        state.message = action.payload;
+      })
+      .addCase(refreshToken.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(refreshToken.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.isSuccess = true;
+        state.isError = false;
+        state.accessToken = action.payload;
+      })
+      .addCase(refreshToken.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
         state.message = action.payload;

@@ -13,14 +13,30 @@ import Login from "./page/Login";
 import Register from "./page/Register";
 import { ToastContainer, Bounce } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
+import useGetAccessToken from "./getAcessToken";
+import ProtectedRoute from "./components/ProtectedRoute";
 function App() {
+  useGetAccessToken();
   const router = createBrowserRouter(
     createRoutesFromElements(
       <Route path="/" element={<MainLayout />}>
         <Route index element={<LandingPage />} />
-        <Route path="/tasks" element={<TasksList />} />
-        <Route path="/profile" element={<Profile />} />
+        <Route
+          path="/tasks"
+          element={
+            <ProtectedRoute>
+              <TasksList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/Login" element={<Login />} />
         <Route path="/Register" element={<Register />} />
       </Route>

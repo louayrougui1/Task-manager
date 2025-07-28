@@ -25,13 +25,15 @@ const registerUser = asyncHandler(async (req, res) => {
     avatarURL: "",
   });
   if (user) {
+    const accessToken = generateAccessToken(user._id);
+    setCookie(res, user._id);
     res.status(201).json({
       _id: user._id,
       name: user.name,
       email: user.email,
       avatarURL: "",
       createdAt: user.createdAt,
-      token: generateToken(user._id),
+      token: accessToken,
     });
   } else {
     res.status(400);
@@ -46,13 +48,15 @@ const loginUser = asyncHandler(async (req, res) => {
   }
   const user = await User.findOne({ email: email });
   if (user && (await bcrypt.compare(password, user.password))) {
+    const accessToken = generateAccessToken(user._id);
+    setCookie(res, user._id);
     res.status(200).json({
       _id: user._id,
       name: user.name,
       email: user.email,
       avatarURL: user.avatarURL,
       createdAt: user.createdAt,
-      token: generateToken(user._id),
+      token: accessToken,
     });
   } else {
     res.status(400);
@@ -60,18 +64,26 @@ const loginUser = asyncHandler(async (req, res) => {
   }
 });
 
+const logoutUser = asyncHandler(async (req, res) => {
+  res.clearCookie("refreshToken", {
+    httpOnly: true,
+    secure: false,
+    sameSite: "Lax", // or whatever you used during setting
+    path: "/", // Make sure to match the path used when setting the cookie
+  });
+
+  res.status(200).json({ message: "Logged out" });
+});
+
 const getMe = asyncHandler(async (req, res) => {
-  const user = await User.findOne({ email: email });
-  console.log(user);
+  const user = req.user;
   res.status(200).json({
     _id: user._id,
     name: user.name,
     email: user.email,
     avatarURL: user.avatarURL,
     createdAt: user.createdAt,
-    token: generateToken(user._id),
   });
-  res.status(200).json(req.user);
 });
 
 const editProfile = asyncHandler(async (req, res) => {
@@ -85,7 +97,6 @@ const editProfile = asyncHandler(async (req, res) => {
     avatarURL: user.avatarURL,
   };
   user.name = name || user.name;
-  user.token = generateToken(user.id);
   await User.findByIdAndUpdate(user._id, updatedFields);
   res.status(200).json({
     _id: user._id,
@@ -93,16 +104,60 @@ const editProfile = asyncHandler(async (req, res) => {
     email: user.email,
     avatarURL: user.avatarURL,
     createdAt: user.createdAt,
-    token: generateToken(user._id),
   });
+});
+
+const refreshAccessToken = asyncHandler(async (req, res) => {
+  const token = req.cookies.refreshToken;
+  if (!token) {
+    res.status(401);
+    throw new Error("No refresh token found");
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.jwt_secret);
+    const user = await User.findById(decoded.id).select("-password");
+
+    if (!user) {
+      res.status(401);
+      throw new Error("User no longer exists");
+    }
+
+    const accessToken = generateAccessToken(user._id);
+    res.status(200);
+    res.json({ accessToken });
+  } catch (err) {
+    res.status(401);
+    throw new Error("Invalid or expired refresh token");
+  }
 });
 
 //generate jwt
 
-const generateToken = (id) => {
+const generateAccessToken = (id) => {
   return jwt.sign({ id }, process.env.jwt_secret, {
+    expiresIn: "15m",
+  });
+};
+const setCookie = (res, id) => {
+  const token = jwt.sign({ id }, process.env.jwt_secret, {
     expiresIn: "30d",
+  });
+  res.cookie("refreshToken", token, {
+    httpOnly: true,
+    //secure: process.env.NODE_ENV !== development,
+    secure: false, // ✅ must be false for localhost (dev)
+    sameSite: "Lax", // ✅ must be "Lax" or "None" ONLY IF secure is true
+    maxAge: 7 * 24 * 3600 * 1000, // 7 days
+    path: "/",
   });
 };
 
-module.exports = { registerUser, loginUser, getMe, editProfile };
+module.exports = {
+  registerUser,
+  loginUser,
+  getMe,
+  editProfile,
+  refreshAccessToken,
+  logoutUser,
+};
